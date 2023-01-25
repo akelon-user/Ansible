@@ -1,0 +1,19 @@
+---
+- hosts: 
+  become: yes
+  tasks:
+    - name: "Time and Date"
+      command: timedatectl set-timezone Europe/Moscow
+    - name: "Stop firewalld"
+      command: systemctl stop firewalld
+    - name: "Disable autorun firewalld"
+      command: systemctl disable firewalld
+    - name: "Stop SELINUX on boot"
+      lineinfile: 
+        path: /etc/selinux/config
+        regexp: '^(.*)SELINUX=enforcing(.*)$' 
+        line: 'SELINUX=disabled'
+        backrefs: yes
+    - name: "Reboot server"
+      ansible.builtin.reboot:
+        reboot_timeout: 10

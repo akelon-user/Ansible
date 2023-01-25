@@ -1,0 +1,39 @@
+---
+- hosts: 
+  become: yes
+  vars:
+    db_user: root
+    db_password: 
+    db_name: 
+  pre_tasks:
+    - name: "Reset dnf modules"
+      command: dnf module reset postgresql -y
+    
+    - name: "Enable postgres 13"
+      command: dnf module enable postgresql:13 -y
+    - name: "Install postgres"
+      dnf: "name={{ item }} state=present"
+      with_items:
+        - postgresql
+        - postgresql-server
+        - postgresql-contrib
+        - python3-psycopg2
+    - name: "install python3-pip"
+      dnf: name=python3-pip state=present 
+    - name: "install pythin3-devel"
+      dnf: name=python3-devel state=present
+  tasks:
+    - name: "Find out if PostgreSQL is initialized"
+      ansible.builtin.stat:
+        path: "/var/lib/pgsql/data/pg_hba.conf"
+      register: postgres_data
+    - name: "Initialize PostgreSQL"
+      shell: "postgresql-setup initdb"
+      when: not postgres_data.stat.exists
+ 
+    - name: "Start and enable services"
+      service: "name={{ item }} state=started enabled=yes"
+      with_items:
+        - postgresql
+    - name: "Restart postgres"
+      service: name=postgresql state=restarted

@@ -1,0 +1,41 @@
+---
+- hosts: 
+  become: yes
+  vars:
+    rmq_user: Admin
+    rmq_password: 
+    rmq_vhost: 
+  pre_tasks:
+    - name: "Wget RabbitMQ from pagecloud"
+      command: wget https://packagecloud.io/install/repositories/rabbitmq/rabbitmq-server/script.rpm.sh
+    - name: "Start script to download RabbitMQ"
+      command: bash script.rpm.sh
+    - name: "Wget Erlang from pagecloud"
+      command: wget https://packagecloud.io/install/repositories/rabbitmq/erlang/script.rpm.sh
+    - name: "Start script to download Erlang"
+      command: bash script.rpm.sh.1
+    - name: "Clear cache RMQ Server"
+      command: yum -q makecache -y --disablerepo='*' --enablerepo='rabbitmq_rabbitmq-server'
+  tasks:
+    - name: "Install Erlang"
+      command: yum install erlang -y
+    - name: "Install RabbitMQ server"
+      command: yum -y install rabbitmq-server -y
+    - name: "Add to hosts"
+      command: echo "127.0.0.1 $(hostname -s)" | sudo tee -a /etc/hosts
+    - name: "Add to autostart"
+      command: systemctl enable --now rabbitmq-server.service
+    - name: "Install plugins"
+      command: rabbitmq-plugins enable rabbitmq_management
+    - name: "Create app database"
+      command: rabbitmqctl add_user {{ rmq_user }} {{ rmq_password }}
+    - name: "Create app database2"
+      command: rabbitmqctl set_user_tags {{ rmq_user }} administrator
+    - name: "Create app database3"
+      command: rabbitmqctl add_vhost {{ rmq_vhost }}
+    - name: "Create app database4"
+      command: rabbitmqctl set_permissions -p {{ rmq_vhost }} {{ rmq_user }} ".*" ".*" ".*"
+    - name: "Create app database4"
+      command: rabbitmqctl set_topic_permissions -p {{ rmq_vhost }} {{ rmq_user }} ".*" ".*" ".*"
+    - name: "Create app database4"
+      command: rabbitmqctl delete_user guest

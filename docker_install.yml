@@ -1,0 +1,31 @@
+---
+- hosts: 
+  become: yes
+  vars:
+    user_docker: root
+  tasks:      
+    - name: "Remove old runc"
+      command: dnf remove runc -y
+    - name: "Download curl"
+      command: curl -fsSL https://get.docker.com -o get-docker.sh
+    - name: "Install script"
+      command: sh get-docker.sh
+    - name: "Strart docker"
+      command: systemctl start docker
+      
+    - name: "Add user to docker group"
+      user:
+        name: "{{ user_docker }}"
+        groups: docker
+        append: yes
+      become: yes
+      
+    - name: "Autostart docker"
+      command: systemctl enable docker.service
+    - name: "Autostart containerd"
+      command: systemctl enable containerd.service
+    - name: "Download ctop"
+      command: wget https://github.com/bcicen/ctop/releases/download/v0.7.1/ctop-0.7.1-linux-amd64 -O /usr/local/bin/ctop
+      
+    - name: "Change permission for ctop"
+      command: chmod +x /usr/local/bin/ctop

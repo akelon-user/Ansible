@@ -1,0 +1,50 @@
+---
+- hosts: 
+  become: yes
+  vars:
+    db_user: root
+    db_password: 
+    db_name: 
+  tasks:
+    - name: "Create app database"
+      postgresql_db:
+        state: present
+        name: "{{ db_name }}"
+      become: yes
+      become_user: postgres
+    - name: "Create db user"
+      postgresql_user:
+        state: present
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+      become: yes
+      become_user: postgres
+    - name: "Grant db user access to app db"
+      postgresql_privs:
+        type: database
+        database: "{{ db_name }}"
+        roles: "{{ db_user }}"
+        grant_option: no
+        privs: all
+      become: yes
+      become_user: postgres
+    - name: "Allow md5 connection for the db user"
+      postgresql_pg_hba:
+        dest: "~/data/pg_hba.conf"
+        contype: host
+        databases: all
+        method: md5
+        users: all
+        address: 0.0.0.0/0
+        create: true
+      become: yes
+      become_user: postgres
+    - name: "postgres | fix listen adress"
+      lineinfile:
+        dest: "/var/lib/pgsql/data/postgresql.conf"
+        regexp: '^#?listen_addresses='
+        line: "listen_addresses = '{{ postgres_listen_addresses|default('*') }}'"
+        state: present
+        create: yes
+      become: yes
+      become_user: postgres
